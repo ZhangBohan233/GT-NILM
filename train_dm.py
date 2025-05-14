@@ -140,18 +140,16 @@ e = {
     },
     # Specify train and test data
     'train': {
-        'datasets': {
-            'redd': REDD_TRAIN_STD
-            # 'ukdale': UKDALE_TRAIN_STD
-        }
+        'datasets':
+            {'redd': REDD_TRAIN_STD} if USING_DATASET == "redd" else {'ukdale': UKDALE_TRAIN_STD}
+
     },
     'test': {
-        'datasets': {
-            'redd': REDD_TEST_STD,
-            # 'ukdale': UKDALE_TEST_STD
-        },
+        'datasets':
+            {'redd': REDD_TEST_STD} if USING_DATASET == "redd" else {'ukdale': UKDALE_TEST_STD}
+        ,
         # Specify evaluation metrics
-        'metrics': ['accuracy', 'f1score', 'mae', 'sae', 'ssim', 'wssim']
+        'metrics': ['accuracy', 'f1score', 'mae', 'sae', 'wssim']
     }
 }
 

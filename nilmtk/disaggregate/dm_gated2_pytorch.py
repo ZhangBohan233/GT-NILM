@@ -185,30 +185,6 @@ def fine_tune(appliance_name, model,
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
 
-    # mains = mains.reshape(1, -1)
-    # appliance = appliance.reshape(1, -1)
-
-    # Plotting
-    # plt.figure(figsize=(12, 6))
-    # plt.plot(mains[0], label='mains', linewidth=1)
-    # plt.plot(appliance[0], label='truth', linewidth=1)
-
-    # plt.show()
-
-    # if src_rate != 0:
-    #     train_mains_src, train_appliance_src, valid_mains_src, valid_appliance_src = \
-    #         shuffle_train_val(mains,
-    #                           appliance,
-    #                           segments=1)
-    #
-    #     len_src = round(train_mains.shape[0] * src_rate)
-    #     len_src_val = round(valid_mains.shape[0] * src_rate)
-    #     train_mains = np.concatenate([train_mains, train_mains_src[:len_src]], axis=1)
-    #     valid_mains = np.concatenate([valid_mains, valid_mains_src[:len_src_val]], axis=1)
-    #     train_appliance = np.concatenate([train_appliance, train_appliance_src[:len_src]], axis=1)
-    #     valid_appliance = np.concatenate([valid_appliance, valid_appliance_src[:len_src_val]],
-    #                                      axis=1)
-
     mains_dst = mains_dst.reshape(1, -1)
     appliance_dst = appliance_dst.reshape(1, -1)
 
@@ -231,34 +207,16 @@ def fine_tune(appliance_name, model,
         print("Main shape valid", mains_dst.shape)
         print("App shape valid", appliance_dst.shape)
 
-    # train_mains, train_appliance, valid_mains, valid_appliance = \
-    #     shuffle_train_val(mains_dst,
-    #                       appliance_dst,
-    #                       segments=1)
     train_mains = mains_dst
     train_appliance = appliance_dst
 
     # Create optimizer, loss function, and dataloader
     optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()),
                                   lr=lr, weight_decay=weight_decay)
-    # optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()),
-    #                             lr=lr)
-    # if filter_train:
-    #     ckpt_name = "./" + appliance_name + "_" + src_dataset + "_dm_g2_best_checkpoint.pt"
-    # else:
-    #     ckpt_name = "./" + appliance_name + "_" + src_dataset + "_dm_best_checkpoint.pt"
-    # checkpoint = torch.load(ckpt_name)
-    # model.load_state_dict(checkpoint['model_state_dict'])
-    # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    # print("Loaded state dict again from: " + ckpt_name)
 
     if freeze:
         model.freeze(True)
 
-    # optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
-    #                              lr=lr)
-    # optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()),
-    #                              lr=lr*10)
     loss_fn = torch.nn.MSELoss(reduction='mean')
 
     train_dataset = GpuDataset(sequence_length,
@@ -270,18 +228,6 @@ def fine_tune(appliance_name, model,
     train_loader = tud.DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                                   num_workers=0,
                                   drop_last=True)
-
-    # valid_dataset = GpuDataset(sequence_length,
-    #                            torch.from_numpy(valid_mains).float(),
-    #                            torch.from_numpy(valid_appliance).float(),
-    #                            stride=stride,
-    #                            gpu=gpu_dataset)
-    #
-    # valid_loader = tud.DataLoader(valid_dataset, batch_size=batch_size, shuffle=True,
-    #                               num_workers=0,
-    #                               drop_last=True)
-
-    # raise RuntimeError
 
     losses = []
 
@@ -331,21 +277,6 @@ def fine_tune(appliance_name, model,
 
         # Evaluate the model
         model.eval()
-        # with torch.no_grad():
-        #     cnt, loss_sum = 0, 0
-        #     for i, (batch_mains, batch_appliance) in enumerate(valid_loader):
-        #         if USE_CUDA and not gpu_dataset:
-        #             batch_mains = batch_mains.cuda()
-        #             batch_appliance = batch_appliance.cuda()
-        #
-        #         # DM special
-        #         noise, noise_hat = model.train_step(batch_appliance, batch_mains)
-        #         loss = loss_fn(noise, noise_hat)
-        #
-        #         # batch_pred = model(batch_mains)
-        #         # loss = loss_fn(batch_appliance, batch_pred)
-        #         loss_sum += loss.item()
-        #         cnt += 1
 
         # generate some samples
         with torch.no_grad():
@@ -395,11 +326,6 @@ def fine_tune(appliance_name, model,
             # valid_dataset.enable_rnd_shift()
             train_dataset.enable_rnd_shift()
 
-        # final_loss = loss_sum / cnt
-        # # Save best only
-        # if best_loss is None or final_loss < best_loss:
-        #     best_loss = final_loss
-        #     patience = 0
         net_state_dict = model.state_dict()
         path_state_dict = base_name + "_best_state_dict.pt"
         torch.save(net_state_dict, path_state_dict)
@@ -413,37 +339,9 @@ def fine_tune(appliance_name, model,
         # else:
         #     patience = patience + 1
 
-        # losses.append((epoch, train_loss_sum / train_cnt, loss_sum / cnt, (ed - st)))
-        # print(
-        #     "Epoch: {}, Valid_Loss: {}, Time consumption: {}s.".format(epoch, final_loss, ed - st))
         print(
             "Epoch: {}, Train: {}, Time consumption: {}s.".format(epoch, train_loss_sum / train_cnt,
                                                                   ed - st))
-        # For the visualization of training process
-
-        # for name, param in model.named_parameters():
-        #     if param.requires_grad:
-        #         writer.add_histogram(name + '_grad', param.grad, epoch)
-        #         writer.add_histogram(name + '_data', param, epoch)
-        # writer.add_scalars("MSELoss", {"Valid": final_loss}, epoch)
-        #
-        # # Save checkpoint
-        # if (checkpoint_interval != None) and ((epoch + 1) % checkpoint_interval == 0):
-        #     checkpoint = {"model_state_dict": model.state_dict(),
-        #                   "optimizer_state_dict": optimizer.state_dict(),
-        #                   "epoch": epoch}
-        #
-        #     path_checkpoint = base_name + "_checkpoint_{}_epoch.pt".format(epoch)
-        #     torch.save(checkpoint, path_checkpoint)
-        #
-        # # write once at the end of each epoch
-        # if not os.path.exists(out_dir):
-        #     os.mkdir(out_dir)
-        # df = pd.DataFrame({'epoch': [lo[0] for lo in losses],
-        #                    'train_loss': [lo[1] for lo in losses],
-        #                    'val_loss': [lo[2] for lo in losses],
-        #                    'time': [lo[3] for lo in losses]})
-        # df.to_csv(out_dir + '/loss.csv', index=False)
 
 
 def train(appliance_name, model: ConditionalDiffusion,

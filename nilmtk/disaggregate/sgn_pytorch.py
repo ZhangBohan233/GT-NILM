@@ -394,7 +394,6 @@ class SGN(Disaggregator):
         self.mains_mean_transfer = params.get('mains_mean_transfer', None)
         self.mains_std_transfer = params.get('mains_std_transfer', None)
         self.test_only = params.get('test_only', False)
-        self.gate_only = params.get('gate_only', False)
         self.fine_tune = params.get('fine_tune', False)
         self.note = params.get('note', '')
         self.load_from = params.get("load_from", self.note)
@@ -539,9 +538,6 @@ class SGN(Disaggregator):
 
                 prediction = self.appliance_params[appliance]['mean'] + (
                         sum_arr * self.appliance_params[appliance]['std'])
-                if self.gate_only:
-                    thresh = self.app_meta[appliance]['on']
-                    prediction = np.where(prediction > thresh, 1, 0)
 
                 valid_predictions = prediction.flatten()
                 valid_predictions = np.where(valid_predictions > 0, valid_predictions, 0)

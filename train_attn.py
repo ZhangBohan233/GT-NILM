@@ -136,24 +136,21 @@ e = {
     # Specify algorithm hyper-parameters
     'methods': {
         "AttentionCNN": AttentionCNN({
-            'n_epochs': 100, 'note': USING_DATASET,
+            'n_epochs': 20 if USING_DATASET == 'redd' else 10,
+            'note': USING_DATASET,
             'sequence_length': 259 if USING_DATASET == 'redd' else 129,
             'patience': 5,
-            'test_only': True
+            'test_only': False
         }),
     },
     # Specify train and test data
     'train': {
-        'datasets': {
-            # 'redd': REDD_TRAIN_STD
-            'ukdale': UKDALE_TRAIN_SMALL
-        }
+        'datasets':
+            {'redd': REDD_TRAIN_STD} if USING_DATASET == "redd" else {'ukdale': UKDALE_TRAIN_STD}
     },
     'test': {
-        'datasets': {
-            # 'redd': REDD_TRAIN_STD
-            'ukdale': UKDALE_TEST_STD
-        },
+        'datasets':
+            {'redd': REDD_TEST_STD} if USING_DATASET == "redd" else {'ukdale': UKDALE_TEST_STD},
         # Specify evaluation metrics
         'metrics': ['accuracy', 'f1score', 'mae', 'sae', 'wssim']
     }

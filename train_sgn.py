@@ -181,13 +181,13 @@ e = {
     'pre_trained': False,
     # 'save_note': 'seen',
     # Specify algorithm hyper-parameters
-    'csv_path': CSV_PATH,
+    # 'csv_path': CSV_PATH,
     'methods': {
         "SGN": SGN(
             {'n_epochs': 15 if USING_DATASET == "redd" else 5, 'batch_size': 256,
              'sequence_length': 400 if USING_DATASET == 'redd' else 200,
              'appliance_length': 64 if USING_DATASET == 'redd' else 32,
-             'test_only': True, 'gate_only': False,
+             'test_only': False,
              'patience': 5 if USING_DATASET == "redd" else 3,
              # 'note': USING_DATASET + '_seen',
              'note': USING_DATASET
@@ -196,20 +196,14 @@ e = {
     },
     # Specify train and test data
     'train': {
-        'datasets': {
-            # 'redd': REDD_TRAIN_STD
-            'redd': REDD_TRAIN_SEEN
-            # 'ukdale': UKDALE_TRAIN_STD
-        }
+        'datasets':
+            {'redd': REDD_TRAIN_STD} if USING_DATASET == "redd" else {'ukdale': UKDALE_TRAIN_STD}
     },
     'test': {
-        'datasets': {
-            # 'redd': REDD_TEST_STD,
-            'redd': REDD_TEST_SEEN
-            # 'ukdale': UKDALE_TEST_STD
-        },
+        'datasets':
+            {'redd': REDD_TEST_STD} if USING_DATASET == "redd" else {'ukdale': UKDALE_TEST_STD},
         # Specify evaluation metrics
-        'metrics': ['accuracy', 'f1score', 'mae', 'sae', 'ssim', 'wssim']
+        'metrics': ['accuracy', 'f1score', 'mae', 'sae', 'wssim']
     }
 }
 

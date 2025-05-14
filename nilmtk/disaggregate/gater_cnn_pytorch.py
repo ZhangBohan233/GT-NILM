@@ -60,15 +60,27 @@ class GaterNetwork(nn.Module):
         )
 
         self.dense = nn.Sequential(
-            nn.Linear(10800, 1024),
+            nn.Linear(50 * self.mains_length, 1024),
             nn.ReLU(True),
             nn.Linear(1024, self.appliance_length)
         )
 
-    def forward(self, x):
+        self.act = nn.Sigmoid()
+        self.b = nn.parameter.Parameter(torch.zeros(1))
+
+    def produce_power(self, x):
         x = self.conv(x)
-        x = self.dense(x.view(-1, 15 * self.mains_length))
+        x = self.dense(x.view(-1, 50 * self.mains_length))
         return x.view(-1, self.appliance_length)
+
+    def forward(self, x):
+        power = self.produce_power(x)
+        state = self.act(power)
+        app_power = power * state + (1 - state) * self.b
+        return app_power, state
+
+    def freeze(self, freeze):
+        self.conv.requires_grad_(not freeze)
 
 
 def initialize(layer):
@@ -108,6 +120,7 @@ def fine_tune(appliance_name,
     # Create optimizer, loss function, and dataloadr
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
+    loss_fn_reg = torch.nn.MSELoss()
     loss_fn_cla = torch.nn.BCELoss()
 
     train_dataset = TensorDataset(torch.from_numpy(train_mains).float().permute(0, 2, 1),
@@ -138,9 +151,11 @@ def fine_tune(appliance_name,
                 true_app_power = true_app_power.cuda()
 
             true_app_state = (true_app_power > threshold).float().detach()
-            pred_app_state = model(true_mains_power)
+            pred_app_power, pred_app_state = model(true_mains_power)
 
-            loss = loss_fn_cla(pred_app_state, true_app_state)
+            loss_reg = loss_fn_reg(pred_app_power, true_app_power)
+            loss_cla = loss_fn_cla(pred_app_state, true_app_state)
+            loss = loss_reg + loss_cla
 
             model.zero_grad()
             loss.backward()
@@ -159,9 +174,11 @@ def fine_tune(appliance_name,
                     true_app_power = true_app_power.cuda()
 
                 true_app_state = (true_app_power > threshold).float().detach()
-                pred_app_state = model(true_mains_power)
+                pred_app_power, pred_app_state = model(true_mains_power)
 
-                loss = loss_fn_cla(pred_app_state, true_app_state)
+                loss_reg = loss_fn_reg(pred_app_power, true_app_power)
+                loss_cla = loss_fn_cla(pred_app_state, true_app_state)
+                loss = loss_reg + loss_cla
 
                 loss_sum += loss
 
@@ -205,7 +222,7 @@ def train(appliance_name, model, mains, appliance, epochs, batch_size, threshold
 
     # Create optimizer, loss function, and dataloadr
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    # loss_fn_reg = torch.nn.MSELoss()
+    loss_fn_reg = torch.nn.MSELoss()
     loss_fn_cla = torch.nn.BCELoss()
 
     train_dataset = TensorDataset(torch.from_numpy(train_mains).float().permute(0, 2, 1),
@@ -228,6 +245,7 @@ def train(appliance_name, model, mains, appliance, epochs, batch_size, threshold
                 train_patience))
             break
             # Train the model
+        print("Beginning epoch", epoch)
         model.train()
         st = time.time()
         for i, (true_mains_power, true_app_power) in enumerate(train_loader):
@@ -236,9 +254,11 @@ def train(appliance_name, model, mains, appliance, epochs, batch_size, threshold
                 true_app_power = true_app_power.cuda()
 
             true_app_state = (true_app_power > threshold).float().detach()
-            pred_app_state = model(true_mains_power)
+            pred_app_power, pred_app_state = model(true_mains_power)
 
-            loss = loss_fn_cla(pred_app_state, true_app_state)
+            loss_reg = loss_fn_reg(pred_app_power, true_app_power)
+            loss_cla = loss_fn_cla(pred_app_state, true_app_state)
+            loss = loss_reg + loss_cla
 
             model.zero_grad()
             loss.backward()
@@ -257,9 +277,11 @@ def train(appliance_name, model, mains, appliance, epochs, batch_size, threshold
                     true_app_power = true_app_power.cuda()
 
                 true_app_state = (true_app_power > threshold).float().detach()
-                pred_app_state = model(true_mains_power)
+                pred_app_power, pred_app_state = model(true_mains_power)
 
-                loss = loss_fn_cla(pred_app_state, true_app_state)
+                loss_reg = loss_fn_reg(pred_app_power, true_app_power)
+                loss_cla = loss_fn_cla(pred_app_state, true_app_state)
+                loss = loss_reg + loss_cla
 
                 loss_sum += loss
                 cnt += 1
@@ -269,13 +291,13 @@ def train(appliance_name, model, mains, appliance, epochs, batch_size, threshold
             best_loss = loss_sum / cnt
             patience = 0
             net_state_dict = model.state_dict()
-            path_state_dict = "./" + appliance_name + "_" + note + "_gater_cnn_best_state_dict.pt"
+            path_state_dict = "./" + appliance_name + "_" + note + "_cnn_best_state_dict.pt"
             torch.save(net_state_dict, path_state_dict)
 
             checkpoint = {"model_state_dict": model.state_dict(),
                           "optimizer_state_dict": optimizer.state_dict(),
                           "epoch": epoch}
-            path_checkpoint = "./" + appliance_name + "_" + note + "_gater_cnn_best_checkpoint.pt".format(
+            path_checkpoint = "./" + appliance_name + "_" + note + "_cnn_best_checkpoint.pt".format(
                 epoch)
             torch.save(checkpoint, path_checkpoint)
         else:
@@ -288,7 +310,7 @@ def train(appliance_name, model, mains, appliance, epochs, batch_size, threshold
             checkpoint = {"model_state_dict": model.state_dict(),
                           "optimizer_state_dict": optimizer.state_dict(),
                           "epoch": epoch}
-            path_checkpoint = "./" + appliance_name + "_" + note + "_gater_cnn_checkpoint_{}_epoch.pt".format(
+            path_checkpoint = "./" + appliance_name + "_" + note + "_cnn_checkpoint_{}_epoch.pt".format(
                 epoch)
             torch.save(checkpoint, path_checkpoint)
 
@@ -310,7 +332,7 @@ def test(model, test_mains, batch_size=512):
             if USE_CUDA:
                 batch_mains = batch_mains.cuda()
 
-            batch_pred = model(batch_mains)
+            batch_pred = model(batch_mains)[0]
             if i == 0:
                 res = batch_pred
             else:
@@ -326,8 +348,8 @@ class GaterCNN(Disaggregator):
         self.MODEL_NAME = "GaterCNN"
         self.models = OrderedDict()
         self.chunk_wise_training = params.get('chunk_wise_training', False)
-        self.mains_length = params.get('sequence_length', 720)
-        self.appliance_length = params.get('appliance_length', 720)
+        self.mains_length = params.get('sequence_length', 200)
+        self.appliance_length = params.get('appliance_length', 32)
         self.n_epochs = params.get('n_epochs', 10)
         self.batch_size = params.get('batch_size', 128)
         self.appliance_params = params.get('appliance_params', {})
@@ -461,11 +483,25 @@ class GaterCNN(Disaggregator):
             disggregation_dict = {}
             test_main = test_mains_df.values.reshape((-1, self.mains_length, 1))
             for appliance in self.models:
-                # Move the model to cpu, and then test it
                 model = self.models[appliance]
-                gates = test(model, test_main)
+                predict = test(model, test_main)
 
-                gates = np.where(gates > 0.5, 1, 0)
+                l2 = self.appliance_length
+                n = len(predict) + l2 - 1
+
+                sum_arr = np.zeros((n))
+                counts_arr = np.zeros((n))
+
+                for i in range(predict.shape[0]):
+                    sum_arr[i:i + l2] += predict[i].flatten()
+                    counts_arr[i:i + l2] += 1
+                for i in range(len(sum_arr)):
+                    sum_arr[i] = sum_arr[i] / counts_arr[i]
+
+                prediction = self.appliance_params[appliance]['mean'] + (
+                        sum_arr * self.appliance_params[appliance]['std'])
+                thresh = self.app_meta[appliance]['on']
+                gates = np.where(prediction > thresh, 1, 0)
 
                 valid_predictions = gates.flatten()
                 valid_predictions = np.where(valid_predictions > 0, valid_predictions, 0)
