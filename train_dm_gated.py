@@ -124,28 +124,44 @@ e = {
     'appliances': ['dish washer', 'fridge', 'microwave', 'washing machine'],
     # Universally no pre-training
     'pre_trained': False,
-    # Specify algorithm hyper-parameters
     'save_note': 'gated',
+    # Specify algorithm hyper-parameters
+    # gater is a network that identify the on/off states of an appliance
+    # if user does not specify this parameter, the DM's output will be the final result
     'gater': GaterCNN(
-        {'n_epochs': 10 if USING_DATASET == "redd" else 5,
-         'batch_size': 128,
-         'sequence_length': 400 if USING_DATASET == 'redd' else 200,
-         'appliance_length': 64 if USING_DATASET == 'redd' else 32,
-         'test_only': False,
-         'note': USING_DATASET}),
+        {
+            'n_epochs': 10 if USING_DATASET == "redd" else 5,
+            'batch_size': 128,
+            'sequence_length': 400 if USING_DATASET == 'redd' else 200,
+            'appliance_length': 64 if USING_DATASET == 'redd' else 32,
+            # conduct test only, no training
+            'test_only': False,
+            # name suffix of the state-dict file.
+            'note': USING_DATASET
+        }),
     'methods': {
         "DM_GATE2": DM_GATE2(
-            {'n_epochs': 5 if USING_DATASET == "redd" else 5,
-             'batch_size': 128, 'sequence_length': 720, 'overlapping_step': 1,
-             'note': USING_DATASET + '',
-             'test_only': True,
-             'fine_tune': False,
-             'lr': 3e-5,
-             "sampler": "ddim",
-             'patience': 5 if USING_DATASET == "redd" else 3,
-             "app_meta": utils.APP_META[USING_DATASET],
-             'filter_train': True
-             }
+            {
+                'n_epochs': 5 if USING_DATASET == "redd" else 5,
+                'batch_size': 128,
+                # size of the sliding window
+                'sequence_length': 720,
+                # step-size of the sliding window when training
+                'overlapping_step': 1,
+                # name suffix of the state-dict file.
+                'note': USING_DATASET + '',
+                # conduct test only, no training
+                'test_only': False,
+                # training or fine-tuning
+                'fine_tune': False,
+                'lr': 3e-5,
+                # ddpm or ddim
+                "sampler": "ddim",
+                'patience': 5 if USING_DATASET == "redd" else 3,
+                "app_meta": utils.APP_META[USING_DATASET],
+                # whether to train the DM on active windows only
+                'filter_train': True
+            }
         )
     },
     # Specify train and test data

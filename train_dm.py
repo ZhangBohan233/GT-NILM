@@ -126,16 +126,27 @@ e = {
     'save_note': '',
     'methods': {
         "DM_GATE2": DM_GATE2(
-            {'n_epochs': 20 if USING_DATASET == "redd" else 5,
-             'batch_size': 128, 'sequence_length': 720, 'overlapping_step': 1,
-             'note': USING_DATASET + '',
-             'test_only': False, 'fine_tune': False, 'lr': 3e-5,
-             "sampler": "ddim",
-             "scaler": 'minmax',
-             'patience': 5 if USING_DATASET == "redd" else 3,
-             "app_meta": utils.APP_META[USING_DATASET],
-             'filter_train': False
-             }
+            {
+                'n_epochs': 5 if USING_DATASET == "redd" else 5,
+                'batch_size': 128,
+                # size of the sliding window
+                'sequence_length': 720,
+                # step-size of the sliding window when training
+                'overlapping_step': 1,
+                # name suffix of the state-dict file.
+                'note': USING_DATASET + '',
+                # conduct test only, no training
+                'test_only': False,
+                # training or fine-tuning
+                'fine_tune': False,
+                'lr': 3e-5,
+                # ddpm or ddim
+                "sampler": "ddim",
+                'patience': 5 if USING_DATASET == "redd" else 3,
+                "app_meta": utils.APP_META[USING_DATASET],
+                # whether to train the DM on active windows only
+                'filter_train': False
+            }
         )
     },
     # Specify train and test data

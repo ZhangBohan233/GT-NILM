@@ -18,12 +18,10 @@ from torchsummary import summary
 import torch.nn as nn
 import torch.utils.data as tud
 from torch.utils.data import Dataset
-from torch.utils.data.dataset import TensorDataset
 from torch.utils.tensorboard import SummaryWriter
 from nilmtk.disaggregate.dm.diffusion import ConditionalDiffusion
 from nilmtk.disaggregate.dm.ddim2 import DDIM_Sampler2
 from nilmtk.disaggregate.dm.unet1d import UNet1D
-from nilmtk.disaggregate.dm.uda_loss import coral, coral2
 import nilmtk.utils as utils
 import nilmtk.losses as losses_cal
 from torchinfo import summary
