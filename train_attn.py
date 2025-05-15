@@ -129,7 +129,7 @@ e = {
     },
     'sample_rate': 3 if USING_DATASET == 'redd' else 6,
     'appliances': ['washing machine'],
-    'app_meta': utils.APP_META[USING_DATASET],
+    'app_meta': utils.GENERAL_APP_META,
     # 'appliances': ['microwave'],
     # Universally no pre-training
     'pre_trained': False,

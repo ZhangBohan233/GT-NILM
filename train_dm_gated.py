@@ -20,7 +20,6 @@ REDD_AVAIL = {
 }
 
 REDD_TRAIN_STD = {
-    # 'path': '../MultiDiffNILM/mnt/redd.h5',
     'path': 'mnt/redd.h5',
     'buildings': {
         2: {
@@ -39,16 +38,15 @@ REDD_TRAIN_STD = {
             'start_time': '2011-04-19',
             'end_time': '2011-05-30'
         },
-        # 6: {
-        #     'start_time': '2011-05-22',
-        #     'end_time': '2011-06-13'
-        # },
+        6: {
+            'start_time': '2011-05-22',
+            'end_time': '2011-06-13'
+        },
     }
 
 }
 
 REDD_TEST_STD = {
-    # 'path': '../MultiDiffNILM/mnt/redd.h5',
     'path': 'mnt/redd.h5',
     # 'buildings': {
     #     2: {
@@ -62,7 +60,7 @@ REDD_TEST_STD = {
             'end_time': '2011-05-23'
         }
         # 1: {
-        #     'start_time': '2011-04-28 05:57',
+        #     'start_time': '2011-04-28',
         #     'end_time': '2011-05-01'
         # }
     }
@@ -119,8 +117,8 @@ e = {
         'appliance': ['active']
     },
     'sample_rate': 3 if USING_DATASET == 'redd' else 6,
-    # 'appliances': ['washing machine'],
-    'app_meta': utils.APP_META[USING_DATASET],
+    # 'appliances': ['washing machine', 'dish washer'],
+    'app_meta': utils.GENERAL_APP_META,
     'appliances': ['dish washer', 'fridge', 'microwave', 'washing machine'],
     # Universally no pre-training
     'pre_trained': False,
@@ -132,8 +130,8 @@ e = {
         {
             'n_epochs': 10 if USING_DATASET == "redd" else 5,
             'batch_size': 128,
-            'sequence_length': 400 if USING_DATASET == 'redd' else 200,
-            'appliance_length': 64 if USING_DATASET == 'redd' else 32,
+            'sequence_length': 720,
+            'appliance_length': 720,
             # conduct test only, no training
             'test_only': False,
             # name suffix of the state-dict file.
@@ -142,7 +140,7 @@ e = {
     'methods': {
         "DM_GATE2": DM_GATE2(
             {
-                'n_epochs': 5 if USING_DATASET == "redd" else 5,
+                'n_epochs': 10 if USING_DATASET == "redd" else 5,
                 'batch_size': 128,
                 # size of the sliding window
                 'sequence_length': 720,
@@ -157,8 +155,7 @@ e = {
                 'lr': 3e-5,
                 # ddpm or ddim
                 "sampler": "ddim",
-                'patience': 5 if USING_DATASET == "redd" else 3,
-                "app_meta": utils.APP_META[USING_DATASET],
+                "app_meta": utils.GENERAL_APP_META,
                 # whether to train the DM on active windows only
                 'filter_train': True
             }

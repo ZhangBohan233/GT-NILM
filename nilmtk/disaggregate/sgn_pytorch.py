@@ -387,7 +387,7 @@ class SGN(Disaggregator):
         self.batch_size = params.get('batch_size', 512)
         self.appliance_params = params.get('appliance_params', {})
         self.appliance_params_transfer = params.get('appliance_params_transfer', {})
-        self.app_meta = params.get('app_meta', utils.APP_META['ukdale'])
+        self.app_meta = params.get('app_meta', utils.GENERAL_APP_META)
         self.mains_mean = params.get('mains_mean', None)
         self.mains_std = params.get('mains_std', None)
         self.mains_min, self.mains_max = None, None

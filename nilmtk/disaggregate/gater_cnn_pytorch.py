@@ -59,8 +59,10 @@ class GaterNetwork(nn.Module):
             nn.ReLU(True)
         )
 
+        self.reduction = nn.Conv1d(50, 15, kernel_size=1)
+
         self.dense = nn.Sequential(
-            nn.Linear(50 * self.mains_length, 1024),
+            nn.Linear(15 * self.mains_length, 1024),
             nn.ReLU(True),
             nn.Linear(1024, self.appliance_length)
         )
@@ -70,7 +72,8 @@ class GaterNetwork(nn.Module):
 
     def produce_power(self, x):
         x = self.conv(x)
-        x = self.dense(x.view(-1, 50 * self.mains_length))
+        x = self.reduction(x)
+        x = self.dense(x.view(-1, 15 * self.mains_length))
         return x.view(-1, self.appliance_length)
 
     def forward(self, x):
@@ -348,8 +351,8 @@ class GaterCNN(Disaggregator):
         self.MODEL_NAME = "GaterCNN"
         self.models = OrderedDict()
         self.chunk_wise_training = params.get('chunk_wise_training', False)
-        self.mains_length = params.get('sequence_length', 200)
-        self.appliance_length = params.get('appliance_length', 32)
+        self.mains_length = params.get('sequence_length', 720)
+        self.appliance_length = params.get('appliance_length', 720)
         self.n_epochs = params.get('n_epochs', 10)
         self.batch_size = params.get('batch_size', 128)
         self.appliance_params = params.get('appliance_params', {})
@@ -489,6 +492,7 @@ class GaterCNN(Disaggregator):
                 l2 = self.appliance_length
                 n = len(predict) + l2 - 1
 
+                # averaging the overlap part, if exists
                 sum_arr = np.zeros((n))
                 counts_arr = np.zeros((n))
 

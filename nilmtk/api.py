@@ -392,7 +392,7 @@ class API():
                     general_df[app + "_ungated"] = app_pred
                     general_df[app + "_gate"] = app_gate
 
-                    plt.plot(app_pred, label=app)
+                    plt.plot(app_pred, label=app + "_ungated")
                     plt.plot(app_gate * 1000, label="gate")
                     plt.legend()
                     plt.show()

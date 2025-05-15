@@ -6,9 +6,6 @@
 import torch
 from torch import nn
 
-# from forward import get_beta_schedule
-# from samplers.fixed_ddim import make_ddim_schedule
-
 
 def make_ddim_schedule(num_infer_steps):
     if num_infer_steps == 8:
@@ -37,7 +34,6 @@ class DDIM_Sampler2(nn.Module):
         if schedule is None:
             schedule = make_ddim_schedule(self.num_timesteps)
 
-        # self.register_buffer('betas', get_beta_schedule(self.schedule, self.train_timesteps), False)
         self.register_buffer('betas', schedule, False)
         self.register_buffer('alphas', 1 - self.betas, False)
         self.register_buffer('alphas_cumprod', self.alphas.cumprod(dim=0),
@@ -110,7 +106,7 @@ class DDIM_Sampler2(nn.Module):
         batch_size = y.shape[0]
         noise_level = self.sqrt_alphas_cumprod_prev[t + 1].repeat(
             batch_size, 1)
-        eps_recon = self.model(y, y_down, t, noise_level=noise_level, time=time)  # todo: 这里的t不对 好像对的
+        eps_recon = self.model(y, y_down, t, noise_level=noise_level, time=time)
         y_recon = self.predict_start_from_noise(y, t, eps_recon)
         if clip_denoised:
             y_recon.clamp_(-1.0, 1.0)

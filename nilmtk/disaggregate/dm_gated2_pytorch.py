@@ -1,20 +1,15 @@
 # Package import
 from __future__ import print_function, division
-from warnings import warn
 from nilmtk.disaggregate import Disaggregator
 import pandas as pd
 import numpy as np
 from collections import OrderedDict
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 from statistics import mean
 import os
 import time
-import pickle
 import random
-import json
 import torch
-from torchsummary import summary
 import torch.nn as nn
 import torch.utils.data as tud
 from torch.utils.data import Dataset
@@ -24,7 +19,6 @@ from nilmtk.disaggregate.dm.ddim2 import DDIM_Sampler2
 from nilmtk.disaggregate.dm.unet1d import UNet1D
 import nilmtk.utils as utils
 import nilmtk.losses as losses_cal
-from torchinfo import summary
 
 # Fix the random seed to ensure the reproducibility of the experiment
 random_seed = 10
@@ -160,10 +154,9 @@ def fine_tune(appliance_name, model,
               epochs, batch_size,
               threshold,
               model_note,
-              src_rate=1.0,
               filter_train=False,
               checkpoint_interval=None, train_patience=5, lr=5e-6, gpu_dataset=False,
-              stride=1, src_dataset="", freeze=True, weight_decay=0.01):
+              stride=1, freeze=True, weight_decay=0.01):
     # Model configuration
     gpu_dataset = gpu_dataset and USE_CUDA
     if USE_CUDA:
@@ -647,7 +640,9 @@ def test(model: ConditionalDiffusion, sequence_length, test_mains, batch_size=51
 class DM_GATE2(Disaggregator):
     def __init__(self, params):
         self.MODEL_NAME = "DM_GATE2"
+        # sliding window size
         self.sequence_length = params.get('sequence_length', 720)
+        # step-size of sliding window when training
         self.overlapping_step = params.get('overlapping_step', 10)
         self.n_epochs = params.get('n_epochs', 10)
         self.batch_size = params.get('batch_size', 32)
@@ -663,15 +658,19 @@ class DM_GATE2(Disaggregator):
         self.test_only = params.get('test_only', False)
         self.fine_tune = params.get('fine_tune', False)
         self.lr = params.get('lr', 5e-6 if self.fine_tune else 3e-5)
-        self.sampler_class = params.get("sampler", "ddpm")
-        self.src_rate = params.get("src_rate", 1.0)
+        # diffusion sampler type: ddpm or ddim
+        self.sampler_class = params.get("sampler", "ddim")
+        # appliance metadata
         self.app_meta = params.get("app_meta", utils.GENERAL_APP_META)
+        # whether to train the DM on active windows only
         self.filter_train = params.get("filter_train", True)
+        # name suffix of the state-dict file.
         self.note = params.get("note", "")
         self.load_from = params.get("load_from", self.note)
-        self.patience = params.get('patience', 5)
+        self.patience = params.get('patience', 3)
         self.scaler = params.get('scaler', "minmax")
         self.freeze = params.get('freeze', False)
+        # plot some info
         self.plot = params.get('plot', False)
         self.weight_decay = params.get('weight_decay', 0.005)
 
@@ -682,8 +681,12 @@ class DM_GATE2(Disaggregator):
             self.set_appliance_params(train_appliances)
         # print("Train", train_main)
 
-        # Preprocess the data and bring it to a valid shape
+        # In test-only mode, the model should not read the training data again but load the
+        # training data's distribution features, e.g., mean, sd, that were saved during training.
+        # However, if no saved feature is found, then we have to read the training data again.
         no_load_train = self.test_only and (not self.fine_tune) and self.load_data_info()
+
+        # Preprocess the data and bring it to a valid shape
         if do_preprocessing:
             print("Doing Preprocessing")
             if no_load_train:
@@ -700,6 +703,7 @@ class DM_GATE2(Disaggregator):
                 print("Train main", train_main.shape)
 
         if self.fine_tune:
+            # process the fine-tuning data
             if 'dst_main' in load_kwargs and 'dst_appliances' in load_kwargs:
                 transfer_main = load_kwargs['dst_main']
                 transfer_appliances = load_kwargs['dst_appliances']
@@ -735,7 +739,7 @@ class DM_GATE2(Disaggregator):
                     plt.legend()
                     plt.show()
             else:
-                raise RuntimeError("If sda/fine_tune is set True, 'dst_main' must be provided")
+                raise RuntimeError("If fine_tune is set True, 'dst_main' must be provided")
         else:
             transfer_main = None
             transfer_appliances = None
@@ -760,8 +764,6 @@ class DM_GATE2(Disaggregator):
             plt.show()
 
         for appliance_name, power in train_appliances:
-            # threshold = (10.0 - self.appliance_params[appliance_name]['mean']) / \
-            #             self.appliance_params[appliance_name]['std']
             on_thresh = self.app_meta[appliance_name]["on"]
             if self.scaler == "std":
                 threshold = ((on_thresh - self.appliance_params[appliance_name]['mean']) /
@@ -770,10 +772,6 @@ class DM_GATE2(Disaggregator):
                 app_max = self.appliance_params[appliance_name]['max']
                 app_min = self.appliance_params[appliance_name]['min']
                 threshold = (on_thresh - app_min) / (app_max - app_min)
-            #             self.appliance_params[appliance_name]['std']
-            # threshold = (self.app_meta[appliance_name]['on'] -
-            #              self.appliance_params[appliance_name]['mean']) / \
-            #             self.appliance_params[appliance_name]['std']
 
             if appliance_name not in self.models:
                 print("First model training for", appliance_name)
@@ -783,11 +781,6 @@ class DM_GATE2(Disaggregator):
                                   channels=2,
                                   out_dim=1,
                                   with_time_emb=True)
-
-                # summary(backbone, input_data=(
-                #     torch.rand((4, 2, self.sequence_length)),),
-                #         gg
-                # )
 
                 self.models[appliance_name] = \
                     ConditionalDiffusion(backbone,
@@ -839,29 +832,17 @@ class DM_GATE2(Disaggregator):
                           self.n_epochs, self.batch_size,
                           threshold,
                           self.note,
-                          src_rate=self.src_rate,
                           filter_train=self.filter_train,
                           checkpoint_interval=1,
                           train_patience=3,
                           lr=self.lr,
-                          src_dataset=self.load_from,
                           freeze=self.freeze,
                           weight_decay=self.weight_decay)
 
                 ckpt_name = ("./" + appliance_name + "_" +
                              self.note + f"_dm{'_g2' if self.filter_train else ''}" +
                              "_best_state_dict.pt")
-                # if self.freeze:
-                #     if self.filter_train:
-                #         ckpt_name = "./" + appliance_name + "_dm_g2_ft_freeze_best_state_dict.pt"
-                #     else:
-                #         ckpt_name = "./" + appliance_name + "_dm_ft_freeze_best_state_dict.pt"
-                # else:
-                #     if self.filter_train:
-                #         ckpt_name = "./" + appliance_name + "_dm_g2_ft_best_state_dict.pt"
-                #     else:
-                #         ckpt_name = "./" + appliance_name + "_dm_ft_best_state_dict.pt"
-                # ckpt_name = "./fridge_dm_checkpoint_26_epoch.pt"
+
                 print("Loaded from", ckpt_name)
                 self.models[appliance_name].load_state_dict(
                     torch.load(ckpt_name))
@@ -961,18 +942,6 @@ class DM_GATE2(Disaggregator):
                         prediction = self.deminmax_output(prediction, app_min, app_max)
 
                 valid_predictions = prediction.flatten()
-                # if pred_gate is not None:
-                #     pred_gate = pred_gate.to_numpy().flatten()
-                #     if valid_predictions.shape[0] > pred_gate.shape[0]:
-                #         gate_valid = np.ones((valid_predictions.shape[0],))
-                #         gate_valid[:pred_gate.shape[0]] = pred_gate
-                #         pred_gate = gate_valid
-                #
-                #     plt.plot(valid_predictions, label=appliance)
-                #     plt.plot(pred_gate * 1000, label="gate")
-                #     plt.show()
-                #
-                #     valid_predictions *= pred_gate
 
                 valid_predictions = np.where(valid_predictions > 0, valid_predictions, 0)
                 series = pd.Series(valid_predictions)
@@ -995,10 +964,6 @@ class DM_GATE2(Disaggregator):
                 self.mains_mean, self.mains_std = mains.values.mean(), mains.values.std()
                 self.mains_min, self.mains_max = 0, mains.values.max()
                 if self.scaler == "std":
-                    # mains = self.normalize_data(mains.values,
-                    #                             sequence_length + self.train_window_shift,
-                    #                             mains.values.mean(),
-                    #                             mains.values.std(), True, overlap_step)
                     mains = self.normalize_data_linear(mains.values,
                                                        sequence_length,
                                                        mains.values.mean(),
@@ -1023,10 +988,6 @@ class DM_GATE2(Disaggregator):
                 processed_app_dfs = []
                 for app_df in app_df_list:
                     if self.scaler == "std":
-                        # data = self.normalize_data(app_df.values,
-                        #                            sequence_length,
-                        #                            app_mean, app_std,
-                        #                            True, overlap_step)
                         data = self.normalize_data_linear(app_df.values,
                                                           sequence_length,
                                                           app_mean, app_std)
@@ -1087,8 +1048,6 @@ class DM_GATE2(Disaggregator):
             for mains in mains_lst:
                 mains = mains.clip(upper=self.app_meta["mains"]["max"])
                 if self.scaler == "std":
-                    # mains = self.normalize_data(mains.values, sequence_length, mains.values.mean(),
-                    #                             mains.values.std(), False)
                     mains = self.normalize_data_linear(mains.values, sequence_length,
                                                        mains.values.mean(),
                                                        mains.values.std())
@@ -1097,9 +1056,6 @@ class DM_GATE2(Disaggregator):
                     mains = self.min_max_data_linear(mains.values, sequence_length,
                                                      0,
                                                      mains.values.max())
-                    # mains = self.min_max_data_linear(mains.values, sequence_length,
-                    #                                  0,
-                    #                                  self.mains_max)
                 processed_mains.append(pd.DataFrame(mains))
             return processed_mains
 
@@ -1126,12 +1082,6 @@ class DM_GATE2(Disaggregator):
         lst = np.array([0] * excess_entries)
         arr = np.concatenate((data.flatten(), lst), axis=0)
         windowed_x = arr
-        # if overlapping:
-        #     windowed_x = np.array(
-        #         [arr[i:i + n] for i in range(0, len(arr) - n + 1, overlapping_step)])
-        # else:
-        #     windowed_x = arr.reshape((-1, sequence_length))
-        # z-score normalization: y = (x - mean)/std
         windowed_x = windowed_x - mean
         return windowed_x / std
 

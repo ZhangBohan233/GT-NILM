@@ -45,8 +45,6 @@ class DiffusionEmbedding(nn.Module):
         exponents = torch.arange(half_dim, dtype=torch.float32) / float(half_dim)
         exponents = 1e-4 ** exponents
         self.register_buffer('exponents', exponents)
-        # self.projection1 = nn.Linear(self.n_channels, self.out_channels)
-        # self.projection2 = nn.Linear(self.out_channels, self.out_channels)
 
     # noise_level: [B]
     def forward(self, noise_level):
@@ -58,11 +56,6 @@ class DiffusionEmbedding(nn.Module):
         x = torch.cat([x.sin(), x.cos()], dim=-1)  # [B, self.dim]
         # print(x.shape)
         return x
-        # x = self.projection1(x)
-        # x = F.silu(x)
-        # x = self.projection2(x)
-        # x = F.silu(x)
-        # return x
 
 
 class SinusoidalPosEmb(nn.Module):
@@ -252,12 +245,6 @@ class UNet1D(nn.Module):
 
         if with_time_emb:
             time_dim = dim
-            # self.time_mlp = nn.Sequential(
-            #     SinusoidalPosEmb(dim),
-            #     nn.Linear(dim, dim * 4),
-            #     nn.GELU(),
-            #     nn.Linear(dim * 4, dim)
-            # )
             self.time_mlp = nn.Sequential(
                 DiffusionEmbedding(50000, dim),
                 nn.Linear(dim, dim * 4),
@@ -265,12 +252,6 @@ class UNet1D(nn.Module):
                 nn.Linear(dim * 4, dim),
                 nn.SiLU()
             )
-            # self.time_mlp = nn.Sequential(
-            #     DiffusionEmbedding(50000, dim),
-            #     nn.Linear(dim, dim * 4),
-            #     nn.GELU(),
-            #     nn.Linear(dim * 4, dim)
-            # )
         else:
             time_dim = None
             self.time_mlp = None
@@ -348,8 +329,6 @@ class UNet1D(nn.Module):
 
         orig_x = x
         t = None
-        # if time is not None and exists(self.time_mlp):
-        #     t = self.time_mlp(time)
         if noise_level is not None and exists(self.time_mlp):
             noise_level = noise_level.squeeze(1)
             t = self.time_mlp(noise_level)

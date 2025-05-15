@@ -1,5 +1,3 @@
-import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from tqdm.auto import tqdm
 from nilmtk.disaggregate.dm.forward import *
@@ -44,10 +42,6 @@ class ConditionalDiffusion(nn.Module):
         # defaults to a DDPM sampler if None is provided
         self.sampler = DDPM_Sampler(
             num_timesteps=self.num_timesteps) if sampler is None else sampler
-
-    # def set_guide_w(self,
-    #                 guide_w):
-    #     self.guide_w = guide_w
 
     def input_T(self, input_):
         # By default, let the model accept samples in [0,1] range, and transform them automatically
@@ -150,35 +144,3 @@ class ConditionalDiffusion(nn.Module):
 
     def freeze(self, freeze=True):
         self.model.freeze(freeze)
-
-    # def p_loss(self, output, condition, return_pred=False):
-    #     """
-    #         Assumes output and input are in [-1,+1] range
-    #     """
-    #     output = self.input_T(output)
-    #     condition = self.input_T(condition)
-    #
-    #     # b,c,h,w=output.shape  # for 2d
-    #     b, c, length = output.shape  # for 1d
-    #     device = output.device
-    #
-    #     # loss for training
-    #
-    #     # input is the optional condition
-    #     t = torch.randint(0, self.forward_process.num_timesteps, (b,), device=device).long()
-    #     output_noisy, noise, noise_level = self.forward_process(
-    #         output, t, return_noise=True, rand_level=self.rand_level)
-    #
-    #     # print(output_noisy.shape, condition.shape)
-    #
-    #     # reverse pass
-    #     # model_input = torch.cat([output_noisy, condition], 1).to(device)
-    #     noise_hat = self.model(output_noisy, condition, t=None,
-    #                            noise_level=noise_level.unsqueeze(-1), time=t)
-    #
-    #     # apply loss
-    #     loss = self.loss_fn(noise, noise_hat)
-    #     if return_pred:
-    #         return loss, t, output - noise_hat
-    #     else:
-    #         return loss
