@@ -2,6 +2,7 @@
 *.hdf
 *.h5
 *.pt
+*.csv
 /.idea
 /runs
 
