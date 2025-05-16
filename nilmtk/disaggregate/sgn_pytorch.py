@@ -582,38 +582,6 @@ class SGN(Disaggregator):
                 appliance_list.append((app_name, processed_appliance_dfs))
             return mains_df_list, appliance_list
 
-        # elif method == 'transfer':
-        #         # Preprocess the main and appliance data, the parameter 'overlapping' will be set 'True'
-        #     mains_df_list = []
-        #     for mains in mains_lst:
-        #         new_mains = mains.values.flatten()
-        #         self.mains_mean, self.mains_std = new_mains.mean(), new_mains.std()
-        #         n = self.mains_length - self.appliance_length
-        #         units_to_pad = n // 2
-        #         new_mains = np.pad(new_mains, (units_to_pad, units_to_pad), 'constant',
-        #                            constant_values=(0, 0))
-        #         new_mains = np.array([new_mains[i:i + self.mains_length] for i in
-        #                               range(len(new_mains) - self.mains_length + 1)])
-        #         new_mains = (new_mains - self.mains_mean) / self.mains_std
-        #         mains_df_list.append(pd.DataFrame(new_mains))
-        #
-        #     appliance_list = []
-        #     for app_index, (app_name, app_df_list) in enumerate(submeters_lst):
-        #         app_mean, app_std = self.appliance_params[app_name]['mean'], \
-        #             self.appliance_params[app_name]['std']
-        #
-        #         processed_appliance_dfs = []
-        #
-        #         for app_df in app_df_list:
-        #             new_app_readings = app_df.values.flatten()
-        #             new_app_readings = np.array(
-        #                 [new_app_readings[i:i + self.appliance_length] for i in
-        #                  range(len(new_app_readings) - self.appliance_length + 1)])
-        #             new_app_readings = (new_app_readings - app_mean) / app_std
-        #             processed_appliance_dfs.append(pd.DataFrame(new_app_readings))
-        #         appliance_list.append((app_name, processed_appliance_dfs))
-        #     return mains_df_list, appliance_list
-
         else:
             # Preprocess the main data only, the parameter 'overlapping' will be set 'False'
             mains_df_list = []

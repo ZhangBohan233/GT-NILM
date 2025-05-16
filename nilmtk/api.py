@@ -1,3 +1,5 @@
+import os.path
+
 from nilmtk.dataset import DataSet
 import pandas as pd
 from nilmtk.losses import *
@@ -347,6 +349,7 @@ class API():
         # This functions computers the predictions on the self.test_mains using all the trained models and then compares different learn't models using the metrics specified        
         pred_gate = None
         if self.gater is not None:
+            # print("Test main shape", self.test_mains[0].values.shape)
             gt_gate, pred_gate = self.predict(self.gater, self.test_mains, self.test_submeters,
                                               self.sample_period, 'Europe/London')
 
@@ -407,6 +410,7 @@ class API():
                 path = self.save_note + "-" + path
             if self.save:
                 if self.csv_path is not None:
+                    os.makedirs(os.path.dirname(self.csv_path), exist_ok=True)
                     general_df.to_csv(self.csv_path)
                 else:
                     general_df.to_csv("./" + path)

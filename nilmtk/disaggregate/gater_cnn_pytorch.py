@@ -120,6 +120,8 @@ def fine_tune(appliance_name,
     train_mains, valid_mains, train_appliance, valid_appliance = train_test_split(mains, appliance,
                                                                                   test_size=.2,
                                                                                   random_state=random_seed)
+    print("Fine-tune shapes",
+          train_mains.shape, valid_mains.shape, train_appliance.shape, valid_appliance.shape)
 
     # Create optimizer, loss function, and dataloadr
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -223,6 +225,8 @@ def train(appliance_name, model, mains, appliance, epochs, batch_size, threshold
     train_mains, valid_mains, train_appliance, valid_appliance = train_test_split(mains, appliance,
                                                                                   test_size=.2,
                                                                                   random_state=random_seed)
+    print("Train shapes",
+          train_mains.shape, valid_mains.shape, train_appliance.shape, valid_appliance.shape)
 
     # Create optimizer, loss function, and dataloadr
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -323,6 +327,8 @@ def test(model, test_mains, batch_size=512):
     # Model test
     if USE_CUDA:
         model = model.cuda()
+
+    print("Test shape:", test_mains.shape)
 
     st = time.time()
     model.eval()
@@ -490,18 +496,20 @@ class GaterCNN(Disaggregator):
                 model = self.models[appliance]
                 predict = test(model, test_main)
 
-                l2 = self.appliance_length
-                n = len(predict) + l2 - 1
-
                 # averaging the overlap part, if exists
-                sum_arr = np.zeros((n))
-                counts_arr = np.zeros((n))
+                if self.mains_length == self.appliance_length:
+                    sum_arr = predict
+                else:
+                    l2 = self.appliance_length
+                    n = len(predict) + l2 - 1
+                    sum_arr = np.zeros((n))
+                    counts_arr = np.zeros((n))
 
-                for i in range(predict.shape[0]):
-                    sum_arr[i:i + l2] += predict[i].flatten()
-                    counts_arr[i:i + l2] += 1
-                for i in range(len(sum_arr)):
-                    sum_arr[i] = sum_arr[i] / counts_arr[i]
+                    for i in range(predict.shape[0]):
+                        sum_arr[i:i + l2] += predict[i].flatten()
+                        counts_arr[i:i + l2] += 1
+                    for i in range(len(sum_arr)):
+                        sum_arr[i] = sum_arr[i] / counts_arr[i]
 
                 prediction = self.appliance_params[appliance]['mean'] + (
                         sum_arr * self.appliance_params[appliance]['std'])
@@ -551,21 +559,32 @@ class GaterCNN(Disaggregator):
             return mains_df_list, appliance_list
 
         else:
-            # Preprocess the main data only, the parameter 'overlapping' will be set 'False'
             mains_df_list = []
-
-            for mains in mains_lst:
-                new_mains = mains.values.flatten()
-                self.mains_mean, self.mains_std = new_mains.mean(), new_mains.std()
-                self.mains_min, self.mains_max = new_mains.min(), new_mains.max()
-                n = self.mains_length - self.appliance_length
-                units_to_pad = n // 2
-                new_mains = np.pad(new_mains, (units_to_pad, units_to_pad), 'constant',
-                                   constant_values=(0, 0))
-                new_mains = np.array([new_mains[i:i + self.mains_length] for i in
-                                      range(len(new_mains) - self.mains_length + 1)])
-                new_mains = (new_mains - self.mains_mean) / self.mains_std
-                mains_df_list.append(pd.DataFrame(new_mains))
+            # Preprocess the main data only, the parameter 'overlapping' will be set 'False'
+            if self.appliance_length < self.mains_length:
+                for mains in mains_lst:
+                    new_mains = mains.values.flatten()
+                    self.mains_mean, self.mains_std = new_mains.mean(), new_mains.std()
+                    self.mains_min, self.mains_max = new_mains.min(), new_mains.max()
+                    n = self.mains_length - self.appliance_length
+                    units_to_pad = n // 2
+                    new_mains = np.pad(new_mains, (units_to_pad, units_to_pad), 'constant',
+                                       constant_values=(0, 0))
+                    new_mains = np.array([new_mains[i:i + self.mains_length] for i in
+                                          range(len(new_mains) - self.mains_length + 1)])
+                    new_mains = (new_mains - self.mains_mean) / self.mains_std
+                    mains_df_list.append(pd.DataFrame(new_mains))
+            elif self.appliance_length == self.mains_length:
+                for mains in mains_lst:
+                    mains = (mains - self.mains_mean) / self.mains_std
+                    remainder = mains.shape[0] % self.mains_length
+                    if remainder != 0:
+                        pad_rows = self.mains_length - remainder
+                        padding = np.zeros((pad_rows, mains.shape[1]))
+                        mains = np.vstack([mains, padding])
+                    mains_df_list.append(pd.DataFrame(mains))
+            else:
+                raise ValueError("Appliance length should not be longer than main length")
             return mains_df_list
 
     def set_appliance_params(self, train_appliances):

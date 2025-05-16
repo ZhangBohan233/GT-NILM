@@ -3,8 +3,11 @@
 *.h5
 *.pt
 *.csv
+*.png
 /.idea
 /runs
+/datainfo
+/experiment_examples/runs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

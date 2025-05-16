@@ -12,4 +12,3 @@ from .dm_gated2_pytorch import DM_GATE2
 
 from .bilstm_pytorch_multidim import MUL_BiLSTM
 from .seq2point_pytorch_multidim import MUL_Seq2Point
-from .dae_pytorch_multidim import MUL_DAE

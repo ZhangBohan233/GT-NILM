@@ -27,7 +27,7 @@ e = {
         'appliance': ['active']
     },
     'sample_rate': 3 if USING_DATASET == 'redd' else 6,
-    # 'appliances': ['washing machine', 'dish washer'],
+    # 'appliances': ['washing machine'],
     'app_meta': utils.GENERAL_APP_META,
     'appliances': APPLIANCES,
     # Universally no pre-training
