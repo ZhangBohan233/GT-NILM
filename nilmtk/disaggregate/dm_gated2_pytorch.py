@@ -638,6 +638,50 @@ def test(model: ConditionalDiffusion, sequence_length, test_mains, batch_size=51
 
 
 class DM_GATE2(Disaggregator):
+    """
+    Disaggregator built by a Conditional Diffusion Model.
+
+    Attributes
+    ----------
+    sequence_length : int
+        Size of the sliding window.
+
+    overlapping_step : int
+        Step-size of the sliding window during training.
+
+    appliance_params : dict
+        Min, max, mean, and std of training appliances power data.
+
+    appliance_params_transfer : dict
+        Min, max, mean, and std of fine-tuning appliances power data.
+
+    test_only : bool
+        Whether the model should only be tested without training. In fine-tuning mode, this
+        attribute is set to True since the model is not trained again from the source dataset.
+
+    fine_tune : bool
+        Whether to fine-tune the model.
+
+    app_meta : bool
+        Appliance meta-data, containing appliances approximate on/off power threshold.
+
+    filter_train : bool
+        Whether to apply the filtering mechanism. If True, the conditional diffusion model is only
+        trained on windows containing active appliance usage.
+
+    note : str
+        Path prefix to save the model and output.
+
+    load_from : str
+        Path prefix to load the model from saved model file. Often used in fine-tuning mode, when
+        loading the model trained from the source dataset.
+
+    scaler : str
+        Data scaler, can be 'minmax' or 'std'.
+
+    freeze : bool
+        Whether to freeze the convolutional layers when fine-tuning.
+    """
     def __init__(self, params):
         self.MODEL_NAME = "DM_GATE2"
         # sliding window size

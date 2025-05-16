@@ -4,11 +4,11 @@
 ## Introduction
 This repository contains the official implementation of the paper:
 
-> **GT-NILM: A Generative, Transferable Non-Intrusive Load Monitoring System Based on Conditional Diffusion Models and Convolutional Neural Networks** [1]
+> **GT-NILM: A Generative, Transferable Non-Intrusive Load Monitoring System Based on Conditional Diffusion Models and Convolutional Neural Networks**
 
 GT-NILM introduces a novel NILM framework that combines a **conditional diffusion model (DM)** and a **CNN-based gating mechanism** to improve both generation quality and transferability across domains.
 
-This implementation is built with **PyTorch** [2], and extends the architecture and functionality of __NeuralNILM_Pytorch__ [3] that based on the NILM toolkit __nilmtk__ [4].
+This implementation is built with **PyTorch** [1], and extends the architecture and functionality of __NeuralNILM_Pytorch__ [2] that based on the NILM toolkit __nilmtk__ [3].
 
 ## Setup
 
@@ -22,7 +22,7 @@ The environments we used are listed in the file `environment.yml`. If you use `c
 
 ## Algorithms Included
 This repository includes:
-* Baseline methods from __NeuralNILM_Pytorch__ [3].
+* Baseline methods from __NeuralNILM_Pytorch__ [2].
 * Our proposed methods from:
   * __U-Net-DM__: Conditional diffusion model (DM) based on a U-Net as denoising network
   * __GT-NILM__<sup>GM</sup>: U-Net-DM enhanced with a CNN-based filter that filters out windows without active appliance usage
@@ -34,28 +34,26 @@ This repository includes:
 
 ## Example Usage
 ### Training and Testing
-* `train_dm.py`: For U-Net-DM
-* `train_dm_gated.py`: For GT-NILM<sup>GM</sup>
+* `experiment_examples/train_dm.py`: For U-Net-DM
+* `experiment_examples/train_dm_gated.py`: For GT-NILM<sup>GM</sup>
+* `experiment_examples/train_attn.py`, `experiment_examples/train_sgn.py`: Benchmark methods Attention-CNN and SGN.
 
 ### Fine-Tuning
-* `ft_dm.ipynb`: Fine-tune the diffusion model
-* `ft_cnn.ipynb`: Fine-tune the CNN filter
+* `experiment_examples/ft_dm.ipynb`: Fine-tune the conditional diffusion model
+* `experiment_examples/ft_cnn.ipynb`: Fine-tune the CNN filter
 
 ### Data Preparation
 Before training, data must be converted to HDF5 (.h5) format and placed under `mnt/` folder.
 The __NeuralNILM_Pytorch__ has provided conversion scripts for the commonly used NILM datasets in `nilmtk/dataset_converters/`,
-including REDD [5] and UK-DALE [6] we used.
+including REDD [4] and UK-DALE [5] we used.
 
 ## References
-[1] B. Zhang, F. Luo, Y. He and G. Ranzi, "GT-NILM: A Generative, Transferable Non-Intrusive Load Monitoring System 
-Based on Conditional Diffusion Models and Convolutional Neural Networks", 2025
+[1] https://pytorch.org/
 
-[2] https://pytorch.org/
+[2] https://github.com/Ming-er/NeuralNILM_Pytorch/ 
 
-[3] https://github.com/Ming-er/NeuralNILM_Pytorch/ 
+[3] https://github.com/nilmtk/nilmtk
 
-[4] https://github.com/nilmtk/nilmtk
+[4] J.Z. Kolter and M.J. Johnson, "REDD: A public data set for energy disaggregation research," in _Workshop on data mining applications in sustainability (SIGKDD), San Diego, CA_, 2011.
 
-[5] J.Z. Kolter and M.J. Johnson, "REDD: A public data set for energy disaggregation research," in _Workshop on data mining applications in sustainability (SIGKDD), San Diego, CA_, 2011.
-
-[6] J. Kelly and W. Knottenbelt, "The UK-DALE dataset, domestic appliance-level electricity demand and whole-house demand from five UK homes," _Scientific Data_, vol. 2, pp. 150007, 2015.
+[5] J. Kelly and W. Knottenbelt, "The UK-DALE dataset, domestic appliance-level electricity demand and whole-house demand from five UK homes," _Scientific Data_, vol. 2, pp. 150007, 2015.

@@ -113,6 +113,7 @@ def fine_tune(appliance_name,
 
     base_name = "./" + appliance_name + "_" + model_note + "_cnn"
 
+    # freeze the covolutional layers
     model.freeze(True)
     summary(model, (1, mains.shape[1]))
     # Split the train and validation set
