@@ -2,7 +2,6 @@
 *.hdf
 *.h5
 *.pt
-*.csv
 *.png
 /.idea
 /runs

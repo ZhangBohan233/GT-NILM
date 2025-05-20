@@ -922,14 +922,14 @@ def draw_transfer():
     #               (27500, 28500))
     plot_app_transfer_multi("washing machine",
                             {
-                                "SGN": "../csv_ft/redd_seen_sgn_dish washer+fridge+washing machine_1_.csv",
-                                "DMGated": "../csv_ft/washing machine_1_GATE=True_DM=True.csv"
+                                "SGN": "../experiment_examples/csv_ft/redd_seen_sgn_dish washer+fridge+washing machine_1_.csv",
+                                "DMGated": "../experiment_examples/csv_ft/7days_washing machine_1_GATE=True_DM=True.csv"
                             },
                             (69150, 70800))
     plot_app_transfer_multi("dish washer",
                             {
-                                "SGN": "../csv_ft/redd_seen_sgn_dish washer+fridge+washing machine_1_.csv",
-                                "DMGated": "../csv_ft/dish washer_1_GATE=True_DM=True.csv"
+                                "SGN": "../experiment_examples/csv_ft/redd_seen_sgn_dish washer+fridge+washing machine_1_.csv",
+                                "DMGated": "../experiment_examples/csv_ft/7days_dish washer_1_GATE=True_DM=True.csv"
                             },
                             (9500, 11000)
                             # (34500, 36000)
@@ -1342,7 +1342,7 @@ if __name__ == '__main__':
     matplotlib.rc('font', **font)
     # matplotlib.rcParams['hatch.linewidth'] = 1.0
     # draw_direct()
-    draw_ukdale_real_time()
+    # draw_ukdale_real_time()
     # draw_redd()
     # draw_transfer()
 
