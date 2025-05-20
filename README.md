@@ -47,6 +47,15 @@ Before training, data must be converted to HDF5 (.h5) format and placed under `m
 The __NeuralNILM_Pytorch__ has provided conversion scripts for the commonly used NILM datasets in `nilmtk/dataset_converters/`,
 including REDD [4] and UK-DALE [5] we used.
 
+## Provided Results
+A subset of raw disaggregation outputs (i.e., model-generated appliance-level power consumption data) 
+is included in this repository.
+* The disaggregation results for __House 1__ from the __REDD__ dataset are provided as .csv files in the `results/` directory.
+* The __UK-DALE__ disaggregation results are not included due to their large file size.
+* Results from __fine-tuned models__ are available in `experiment_examples/csv_ft/`.
+
+These CSV files contain time-series data representing the predicted appliance-level consumption, and can be used for further analysis or visualization.
+
 ## References
 [1] https://pytorch.org/
 
